@@ -97,7 +97,7 @@ body {
 }
 
 
-#link, #coordsDiv, #progressDiv {
+#link, #coordsDiv, #progressDiv, #deathCounterDiv {
     background-color: #fff; /* fallback */
     background-color: rgba(255,255,255,0.55);
     border: 1px solid rgb(0, 0, 0);

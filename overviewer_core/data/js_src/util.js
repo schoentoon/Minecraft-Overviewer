@@ -69,6 +69,9 @@ overviewer.util = {
         progressdiv.render();
         progressdiv.updateProgress();
 
+        var deathCounter = new overviewer.views.DeathCounterView({tagName: 'DIV'});
+        deathCounter.render();
+
         if (overviewer.collections.haveSigns) {
             var signs = new overviewer.views.SignControlView();
             signs.registerEvents(signs);
