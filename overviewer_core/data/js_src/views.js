@@ -597,6 +597,9 @@ overviewer.views.DeathCounterView = Backbone.View.extend({
         this.el.id = 'deathCounterDiv';
         this.el.innerHTML = 'Death Counter';
         overviewer.map.controls[google.maps.ControlPosition.RIGHT_CENTER].push(this.el);
+        $.ajaxSetup({cache: false});
+    },
+    updateDeaths: function() {
         de = this; /* Assuming https://gist.github.com/schoentoon/6176047 is at /deaths.json.py */
         $.getJSON('deaths.json.py', null, function(d) {
             if (!(d == null || d == '')) {
@@ -605,6 +608,7 @@ overviewer.views.DeathCounterView = Backbone.View.extend({
                     de.el.innerHTML += d[death][0] + ' ' + d[death][1] + '<br>';
                 }
             }
+            setTimeout("de.updateDeaths()", 60000);
         });
     }
 });
