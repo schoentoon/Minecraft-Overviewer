@@ -71,6 +71,7 @@ overviewer.util = {
 
         var deathCounter = new overviewer.views.DeathCounterView({tagName: 'DIV'});
         deathCounter.render();
+        deathCounter.updateDeaths();
 
         if (overviewer.collections.haveSigns) {
             var signs = new overviewer.views.SignControlView();

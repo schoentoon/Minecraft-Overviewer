@@ -596,6 +596,7 @@ overviewer.views.DeathCounterView = Backbone.View.extend({
     initialize: function() {
         this.el.id = 'deathCounterDiv';
         this.el.innerHTML = 'Death Counter';
+        this.el.hidden = true;
         overviewer.map.controls[google.maps.ControlPosition.RIGHT_CENTER].push(this.el);
         $.ajaxSetup({cache: false});
     },
@@ -607,6 +608,7 @@ overviewer.views.DeathCounterView = Backbone.View.extend({
                 for (var death in d) {
                     de.el.innerHTML += d[death][0] + ' ' + d[death][1] + '<br>';
                 }
+                de.el.hidden = false;
             }
             setTimeout("de.updateDeaths()", 60000);
         });
