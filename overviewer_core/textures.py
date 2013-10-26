@@ -220,7 +220,7 @@ class Textures(object):
         versiondir = None
         if "APPDATA" in os.environ and sys.platform.startswith("win"):
             versiondir = os.path.join(os.environ['APPDATA'], ".minecraft", "versions")
-        if "HOME" in os.environ:
+        elif "HOME" in os.environ:
             # For linux:
             versiondir = os.path.join(os.environ['HOME'], ".minecraft", "versions")
             if not os.path.exists(versiondir) and sys.platform.startswith("darwin"):
@@ -712,7 +712,7 @@ class Textures(object):
         """
         img = Image.new("RGBA", (24,24), self.bgcolor)
 
-        front = tex.resize((14, 11), Image.ANTIALIAS)
+        front = tex.resize((14, 12), Image.ANTIALIAS)
         alpha_over(img, front, (5,9))
         return img
 
@@ -864,7 +864,18 @@ def grass(self, blockid, data):
     return img
 
 # dirt
-block(blockid=3, top_image="assets/minecraft/textures/blocks/dirt.png")
+@material(blockid=3, data=range(3), solid=True)
+def dirt_blocks(self, blockid, data):
+    side_img = self.load_image_texture("assets/minecraft/textures/blocks/dirt.png")
+    if data == 0: # normal
+        img =  self.build_block(self.load_image_texture("assets/minecraft/textures/blocks/dirt.png"), side_img)
+    if data == 1: # grassless
+        img = self.build_block(self.load_image_texture("assets/minecraft/textures/blocks/dirt.png"), side_img)
+    if data == 2: # podzol
+        side_img = self.load_image_texture("assets/minecraft/textures/blocks/dirt_podzol_side.png")
+        img = self.build_block(self.load_image_texture("assets/minecraft/textures/blocks/dirt_podzol_top.png"), side_img)
+    return img
+
 # cobblestone
 block(blockid=4, top_image="assets/minecraft/textures/blocks/cobblestone.png")
 
@@ -903,15 +914,21 @@ def water(self, blockid, data):
 
 # other water, glass, and ice (no inner surfaces)
 # uses pseudo-ancildata found in iterate.c
-@material(blockid=[9, 20, 79], data=range(32), fluid=(9,), transparent=True, nospawn=True, solid=(79, 20))
+@material(blockid=[9, 20, 79, 95], data=range(512), fluid=(9,), transparent=True, nospawn=True, solid=(79, 20, 95))
 def no_inner_surfaces(self, blockid, data):
     if blockid == 9:
         texture = self.load_water()
     elif blockid == 20:
         texture = self.load_image_texture("assets/minecraft/textures/blocks/glass.png")
+    elif blockid == 95:
+        texture = self.load_image_texture("assets/minecraft/textures/blocks/glass_%s.png" % color_map[data & 0x0f])
     else:
         texture = self.load_image_texture("assets/minecraft/textures/blocks/ice.png")
-        
+
+    # now that we've used the lower 4 bits to get color, shift down to get the 5 bits that encode face hiding
+    if blockid != 9: # water doesn't have a shifted pseudodata
+        data = data >> 4
+
     if (data & 0b10000) == 16:
         top = texture
     else:
@@ -950,7 +967,14 @@ def lava(self, blockid, data):
     return self.build_block(lavatex, lavatex)
 
 # sand
-block(blockid=12, top_image="assets/minecraft/textures/blocks/sand.png")
+@material(blockid=12, data=range(2), solid=True)
+def sand_blocks(self, blockid, data):
+    if data == 0: # normal
+        img = self.build_block(self.load_image_texture("assets/minecraft/textures/blocks/sand.png"), self.load_image_texture("assets/minecraft/textures/blocks/sand.png"))
+    if data == 1: # red
+        img = self.build_block(self.load_image_texture("assets/minecraft/textures/blocks/red_sand.png"), self.load_image_texture("assets/minecraft/textures/blocks/red_sand.png"))
+    return img
+
 # gravel
 block(blockid=13, top_image="assets/minecraft/textures/blocks/gravel.png")
 # gold ore
@@ -960,7 +984,7 @@ block(blockid=15, top_image="assets/minecraft/textures/blocks/iron_ore.png")
 # coal ore
 block(blockid=16, top_image="assets/minecraft/textures/blocks/coal_ore.png")
 
-@material(blockid=17, data=range(12), solid=True)
+@material(blockid=[17,162], data=range(12), solid=True)
 def wood(self, blockid, data):
     # extract orientation and wood type frorm data bits
     wood_type = data & 3
@@ -973,15 +997,29 @@ def wood(self, blockid, data):
         elif wood_orientation == 8: wood_orientation = 4
 
     # choose textures
-    top = self.load_image_texture("assets/minecraft/textures/blocks/log_oak_top.png")
-    if wood_type == 0: # normal
-        side = self.load_image_texture("assets/minecraft/textures/blocks/log_oak.png")
-    if wood_type == 1: # spruce
-        side = self.load_image_texture("assets/minecraft/textures/blocks/log_spruce.png")
-    if wood_type == 2: # birch
-        side = self.load_image_texture("assets/minecraft/textures/blocks/log_birch.png")
-    if wood_type == 3: # jungle wood
-        side = self.load_image_texture("assets/minecraft/textures/blocks/log_jungle.png")
+    if blockid == 17: # regular wood:
+        if wood_type == 0: # normal
+            top = self.load_image_texture("assets/minecraft/textures/blocks/log_oak_top.png")
+            side = self.load_image_texture("assets/minecraft/textures/blocks/log_oak.png")
+        if wood_type == 1: # spruce
+            top = self.load_image_texture("assets/minecraft/textures/blocks/log_spruce_top.png")
+            side = self.load_image_texture("assets/minecraft/textures/blocks/log_spruce.png")
+        if wood_type == 2: # birch
+            top = self.load_image_texture("assets/minecraft/textures/blocks/log_birch_top.png")
+            side = self.load_image_texture("assets/minecraft/textures/blocks/log_birch.png")
+        if wood_type == 3: # jungle wood
+            top = self.load_image_texture("assets/minecraft/textures/blocks/log_jungle_top.png")
+            side = self.load_image_texture("assets/minecraft/textures/blocks/log_jungle.png")
+    elif blockid == 162: # acacia/dark wood:
+        if wood_type == 0: # acacia
+            top = self.load_image_texture("assets/minecraft/textures/blocks/log_acacia_top.png")
+            side = self.load_image_texture("assets/minecraft/textures/blocks/log_acacia.png")
+        elif wood_type == 1: # dark oak
+            top = self.load_image_texture("assets/minecraft/textures/blocks/log_big_oak_top.png")
+            side = self.load_image_texture("assets/minecraft/textures/blocks/log_big_oak.png")
+        else:
+            top = self.load_image_texture("assets/minecraft/textures/blocks/log_acacia_top.png")
+            side = self.load_image_texture("assets/minecraft/textures/blocks/log_acacia.png")
 
     # choose orientation and paste textures
     if wood_orientation == 0:
@@ -1443,8 +1481,16 @@ def wool(self, blockid, data):
 
 # dandelion
 sprite(blockid=37, imagename="assets/minecraft/textures/blocks/flower_dandelion.png")
-# rose
-sprite(blockid=38, imagename="assets/minecraft/textures/blocks/flower_rose.png")
+
+# flowers
+@material(blockid=38, data=range(10), transparent=True)
+def flower(self, blockid, data):
+    flower_map = ["rose", "blue_orchid", "allium", "houstonia", "tulip_red", "tulip_orange",
+                  "tulip_white", "tulip_pink", "oxeye_daisy", "dandelion"]
+    texture = self.load_image_texture("assets/minecraft/textures/blocks/flower_%s.png" % flower_map[data])
+
+    return self.build_billboard(texture)
+
 # brown mushroom
 sprite(blockid=39, imagename="assets/minecraft/textures/blocks/mushroom_brown.png")
 # red mushroom
@@ -1622,147 +1668,120 @@ def fire(self, blockid, data):
 block(blockid=52, top_image="assets/minecraft/textures/blocks/mob_spawner.png", transparent=True)
 
 # wooden, cobblestone, red brick, stone brick, netherbrick, sandstone, spruce, birch, jungle and quartz stairs.
-@material(blockid=[53,67,108,109,114,128,134,135,136,156], data=range(8), transparent=True, solid=True, nospawn=True)
+@material(blockid=[53,67,108,109,114,128,134,135,136,156], data=range(128), transparent=True, solid=True, nospawn=True)
 def stairs(self, blockid, data):
-
-    # first, rotations
     # preserve the upside-down bit
     upside_down = data & 0x4
-    data = data & 0x3
-    if self.rotation == 1:
-        if data == 0: data = 2
-        elif data == 1: data = 3
-        elif data == 2: data = 1
-        elif data == 3: data = 0
-    elif self.rotation == 2:
-        if data == 0: data = 1
-        elif data == 1: data = 0
-        elif data == 2: data = 3
-        elif data == 3: data = 2
-    elif self.rotation == 3:
-        if data == 0: data = 3
-        elif data == 1: data = 2
-        elif data == 2: data = 0
-        elif data == 3: data = 1
-    data = data | upside_down
+
+    # find solid quarters within the top or bottom half of the block
+    #                   NW           NE           SE           SW
+    quarters = [data & 0x8, data & 0x10, data & 0x20, data & 0x40]
+
+    # rotate the quarters so we can pretend northdirection is always upper-left
+    numpy.roll(quarters, [0,1,3,2][self.rotation])
+    nw,ne,se,sw = quarters
 
     if blockid == 53: # wooden
-        texture = self.load_image_texture("assets/minecraft/textures/blocks/planks_oak.png")
+        texture = self.load_image_texture("assets/minecraft/textures/blocks/planks_oak.png").copy()
     elif blockid == 67: # cobblestone
-        texture = self.load_image_texture("assets/minecraft/textures/blocks/cobblestone.png")
+        texture = self.load_image_texture("assets/minecraft/textures/blocks/cobblestone.png").copy()
     elif blockid == 108: # red brick stairs
-        texture = self.load_image_texture("assets/minecraft/textures/blocks/brick.png")
+        texture = self.load_image_texture("assets/minecraft/textures/blocks/brick.png").copy()
     elif blockid == 109: # stone brick stairs
-        texture = self.load_image_texture("assets/minecraft/textures/blocks/stonebrick.png")
+        texture = self.load_image_texture("assets/minecraft/textures/blocks/stonebrick.png").copy()
     elif blockid == 114: # netherbrick stairs
-        texture = self.load_image_texture("assets/minecraft/textures/blocks/nether_brick.png")
+        texture = self.load_image_texture("assets/minecraft/textures/blocks/nether_brick.png").copy()
     elif blockid == 128: # sandstone stairs
-        texture = self.load_image_texture("assets/minecraft/textures/blocks/sandstone_normal.png")
+        texture = self.load_image_texture("assets/minecraft/textures/blocks/sandstone_normal.png").copy()
     elif blockid == 134: # spruce wood stairs
-        texture = self.load_image_texture("assets/minecraft/textures/blocks/planks_spruce.png")
+        texture = self.load_image_texture("assets/minecraft/textures/blocks/planks_spruce.png").copy()
     elif blockid == 135: # birch wood  stairs
-        texture = self.load_image_texture("assets/minecraft/textures/blocks/planks_birch.png")
+        texture = self.load_image_texture("assets/minecraft/textures/blocks/planks_birch.png").copy()
     elif blockid == 136: # jungle good stairs
-        texture = self.load_image_texture("assets/minecraft/textures/blocks/planks_jungle.png")
+        texture = self.load_image_texture("assets/minecraft/textures/blocks/planks_jungle.png").copy()
     elif blockid == 156: # quartz block stairs
-        texture = self.load_image_texture("assets/minecraft/textures/blocks/quartz_block_side.png")
+        texture = self.load_image_texture("assets/minecraft/textures/blocks/quartz_block_side.png").copy()
 
+    outside_l = texture.copy()
+    outside_r = texture.copy()
+    inside_l = texture.copy()
+    inside_r = texture.copy()
 
-    side = texture.copy()
-    half_block_u = texture.copy() # up, down, left, right
-    half_block_d = texture.copy()
-    half_block_l = texture.copy()
-    half_block_r = texture.copy()
-
-    # sandstone stairs have spcial top texture
+    # sandstone & quartz stairs have special top texture
     if blockid == 128:
-        half_block_u = self.load_image_texture("assets/minecraft/textures/blocks/sandstone_top.png").copy()
-        half_block_d = self.load_image_texture("assets/minecraft/textures/blocks/sandstone_top.png").copy()
         texture = self.load_image_texture("assets/minecraft/textures/blocks/sandstone_top.png").copy()
-    elif blockid == 156: # also quartz stairs
-        half_block_u = self.load_image_texture("assets/minecraft/textures/blocks/quartz_block_top.png").copy()
-        half_block_d = self.load_image_texture("assets/minecraft/textures/blocks/quartz_block_top.png").copy()
+    elif blockid == 156:
         texture = self.load_image_texture("assets/minecraft/textures/blocks/quartz_block_top.png").copy()
 
-    # generate needed geometries
-    ImageDraw.Draw(side).rectangle((0,0,7,6),outline=(0,0,0,0),fill=(0,0,0,0))
-    ImageDraw.Draw(half_block_u).rectangle((0,8,15,15),outline=(0,0,0,0),fill=(0,0,0,0))
-    ImageDraw.Draw(half_block_d).rectangle((0,0,15,6),outline=(0,0,0,0),fill=(0,0,0,0))
-    ImageDraw.Draw(half_block_l).rectangle((8,0,15,15),outline=(0,0,0,0),fill=(0,0,0,0))
-    ImageDraw.Draw(half_block_r).rectangle((0,0,7,15),outline=(0,0,0,0),fill=(0,0,0,0))
-    
-    if data & 0x4 == 0x4: # upside doen stair
-        side = side.transpose(Image.FLIP_TOP_BOTTOM)
-        if data & 0x3 == 0: # ascending east
-            img = Image.new("RGBA", (24,24), self.bgcolor) # first paste the texture in the back
-            tmp = self.transform_image_side(half_block_d)
-            alpha_over(img, tmp, (6,3))
-            alpha_over(img, self.build_full_block(texture, None, None, half_block_u, side.transpose(Image.FLIP_LEFT_RIGHT)))
+    slab_top = texture.copy()
 
-        elif data & 0x3 == 0x1: # ascending west
-            img = self.build_full_block(texture, None, None, texture, side)
-        
-        elif data & 0x3 == 0x2: # ascending south
-            img = self.build_full_block(texture, None, None, side, texture)
-            
-        elif data & 0x3 == 0x3: # ascending north
-            img = Image.new("RGBA", (24,24), self.bgcolor) # first paste the texture in the back
-            tmp = self.transform_image_side(half_block_d).transpose(Image.FLIP_LEFT_RIGHT)
-            alpha_over(img, tmp, (6,3))
-            alpha_over(img, self.build_full_block(texture, None, None, side.transpose(Image.FLIP_LEFT_RIGHT), half_block_u))
-        
-    else: # normal stair
-        if data == 0: # ascending east
-            img = self.build_full_block(half_block_r, None, None, half_block_d, side.transpose(Image.FLIP_LEFT_RIGHT))
-            tmp1 = self.transform_image_side(half_block_u)
-            
-            # Darken the vertical part of the second step
-            sidealpha = tmp1.split()[3]
-            # darken it a bit more than usual, looks better
-            tmp1 = ImageEnhance.Brightness(tmp1).enhance(0.8)
-            tmp1.putalpha(sidealpha)
-            
-            alpha_over(img, tmp1, (6,4)) #workaround, fixes a hole
-            alpha_over(img, tmp1, (6,3))
-            tmp2 = self.transform_image_top(half_block_l)
-            alpha_over(img, tmp2, (0,6))
-            
-        elif data == 1: # ascending west
-            img = Image.new("RGBA", (24,24), self.bgcolor) # first paste the texture in the back
-            tmp1 = self.transform_image_top(half_block_r)
-            alpha_over(img, tmp1, (0,6))
-            tmp2 = self.build_full_block(half_block_l, None, None, texture, side)
-            alpha_over(img, tmp2)
-        
-        elif data == 2: # ascending south
-            img = Image.new("RGBA", (24,24), self.bgcolor) # first paste the texture in the back
-            tmp1 = self.transform_image_top(half_block_u)
-            alpha_over(img, tmp1, (0,6))
-            tmp2 = self.build_full_block(half_block_d, None, None, side, texture)
-            alpha_over(img, tmp2)
-            
-        elif data == 3: # ascending north
-            img = self.build_full_block(half_block_u, None, None, side.transpose(Image.FLIP_LEFT_RIGHT), half_block_d)
-            tmp1 = self.transform_image_side(half_block_u).transpose(Image.FLIP_LEFT_RIGHT)
-            
-            # Darken the vertical part of the second step
-            sidealpha = tmp1.split()[3]
-            # darken it a bit more than usual, looks better
-            tmp1 = ImageEnhance.Brightness(tmp1).enhance(0.7)
-            tmp1.putalpha(sidealpha)
-            
-            alpha_over(img, tmp1, (6,4)) #workaround, fixes a hole
-            alpha_over(img, tmp1, (6,3))
-            tmp2 = self.transform_image_top(half_block_d)
-            alpha_over(img, tmp2, (0,6))
-        
-        # touch up a (horrible) pixel
-        img.putpixel((18,3),(0,0,0,0))
-        
+    push = 8 if upside_down else 0
+
+    def rect(tex,coords):
+        ImageDraw.Draw(tex).rectangle(coords,outline=(0,0,0,0),fill=(0,0,0,0))
+
+    # cut out top or bottom half from inner surfaces
+    rect(inside_l, (0,8-push,15,15-push))
+    rect(inside_r, (0,8-push,15,15-push))
+
+    # cut out missing or obstructed quarters from each surface
+    if not nw:
+        rect(outside_l, (0,push,7,7+push))
+        rect(texture, (0,0,7,7))
+    if not nw or sw:
+        rect(inside_r, (8,push,15,7+push)) # will be flipped
+    if not ne:
+        rect(texture, (8,0,15,7))
+    if not ne or nw:
+        rect(inside_l, (0,push,7,7+push))
+    if not ne or se:
+        rect(inside_r, (0,push,7,7+push)) # will be flipped
+    if not se:
+        rect(outside_r, (0,push,7,7+push)) # will be flipped
+        rect(texture, (8,8,15,15))
+    if not se or sw:
+        rect(inside_l, (8,push,15,7+push))
+    if not sw:
+        rect(outside_l, (8,push,15,7+push))
+        rect(outside_r, (8,push,15,7+push)) # will be flipped
+        rect(texture, (0,8,7,15))
+
+    img = Image.new("RGBA", (24,24), self.bgcolor)
+
+    if upside_down:
+        # top should have no cut-outs after all
+        texture = slab_top
+    else:
+        # render the slab-level surface
+        slab_top = self.transform_image_top(slab_top)
+        alpha_over(img, slab_top, (0,6))
+
+    # render inner left surface
+    inside_l = self.transform_image_side(inside_l)
+    # Darken the vertical part of the second step
+    sidealpha = inside_l.split()[3]
+    # darken it a bit more than usual, looks better
+    inside_l = ImageEnhance.Brightness(inside_l).enhance(0.8)
+    inside_l.putalpha(sidealpha)
+    alpha_over(img, inside_l, (6,3))
+
+    # render inner right surface
+    inside_r = self.transform_image_side(inside_r).transpose(Image.FLIP_LEFT_RIGHT)
+    # Darken the vertical part of the second step
+    sidealpha = inside_r.split()[3]
+    # darken it a bit more than usual, looks better
+    inside_r = ImageEnhance.Brightness(inside_r).enhance(0.7)
+    inside_r.putalpha(sidealpha)
+    alpha_over(img, inside_r, (6,3))
+
+    # render outer surfaces
+    alpha_over(img, self.build_full_block(texture, None, None, outside_l, outside_r))
+
     return img
 
 # normal, locked (used in april's fool day), ender and trapped chest
-@material(blockid=[54,95,130,146], data=range(30), transparent = True)
+# NOTE:  locked chest used to be id95 (which is now stained glass)
+@material(blockid=[54,130,146], data=range(30), transparent = True)
 def chests(self, blockid, data):
     # the first 3 bits are the orientation as stored in minecraft, 
     # bits 0x8 and 0x10 indicate which half of the double chest is it.
@@ -1785,7 +1804,7 @@ def chests(self, blockid, data):
         elif orientation_data == 4: data = 3 | (data & 24)
         elif orientation_data == 5: data = 2 | (data & 24)
     
-    if blockid in (95,130) and not data in [2,3,4,5]: return None
+    if blockid == 130 and not data in [2,3,4,5]: return None
         # iterate.c will only return the ancil data (without pseudo 
         # ancil data) for locked and ender chests, so only 
         # ancilData = 2,3,4,5 are used for this blockids
@@ -3321,12 +3340,14 @@ def huge_mushroom(self, blockid, data):
 # iron bars and glass pane
 # TODO glass pane is not a sprite, it has a texture for the side,
 # at the moment is not used
-@material(blockid=[101,102], data=range(16), transparent=True, nospawn=True)
+@material(blockid=[101,102, 160], data=range(256), transparent=True, nospawn=True)
 def panes(self, blockid, data):
     # no rotation, uses pseudo data
     if blockid == 101:
         # iron bars
         t = self.load_image_texture("assets/minecraft/textures/blocks/iron_bars.png")
+    elif blockid == 160:
+        t = self.load_image_texture("assets/minecraft/textures/blocks/glass_%s.png" % color_map[data & 0xf])
     else:
         # glass panes
         t = self.load_image_texture("assets/minecraft/textures/blocks/glass.png")
@@ -3349,6 +3370,9 @@ def panes(self, blockid, data):
     # +y axis points bottom right direction
     # First compose things in the back of the image, 
     # then things in the front.
+
+    # the lower 4 bits encode color, the upper 4 encode adjencies
+    data = data >> 4
 
     if (data & 0b0001) == 1 or data == 0:
         alpha_over(img,up_left, (6,3),up_left)    # top left
@@ -3849,7 +3873,7 @@ def beacon(self, blockid, data):
     
     return img
 
-# cobbleston and mossy cobblestone walls
+# cobblestone and mossy cobblestone walls
 # one additional bit of data value added for mossy and cobblestone
 @material(blockid=139, data=range(32), transparent=True, nospawn=True)
 def cobblestone_wall(self, blockid, data):
@@ -4184,3 +4208,27 @@ def stained_clay(self, blockid, data):
 
 #coal block
 block(blockid=173, top_image="assets/minecraft/textures/blocks/coal_block.png")
+
+# packed ice block
+block(blockid=174, top_image="assets/minecraft/textures/blocks/ice_packed.png")
+
+@material(blockid=175, data=range(16), transparent=True)
+def flower(self, blockid, data):
+    double_plant_map = ["sunflower", "syringa", "grass", "fern", "rose", "paeonia", "paeonia", "paeonia"]
+    plant = double_plant_map[data & 0x7]
+
+    if data & 0x8:
+        part = "top"
+    else:
+        part = "bottom"
+
+    png = "assets/minecraft/textures/blocks/double_plant_%s_%s.png" % (plant,part)
+    texture = self.load_image_texture(png)
+    img = self.build_billboard(texture)
+
+    #sunflower top
+    if data == 8:
+        bloom_tex = self.load_image_texture("assets/minecraft/textures/blocks/double_plant_sunflower_front.png")
+        alpha_over(img, bloom_tex.resize((14, 11), Image.ANTIALIAS), (5,5))
+
+    return img
