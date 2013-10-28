@@ -602,11 +602,11 @@ overviewer.views.DeathCounterView = Backbone.View.extend({
     },
     updateDeaths: function() {
         de = this; /* Assuming https://gist.github.com/schoentoon/6176047 is at /deaths.json.py */
-        $.getJSON('deaths.json.py', null, function(d) {
+        $.getJSON('/deaths.json.py', null, function(d) {
             if (!(d == null || d == '')) {
-                de.el.innerHTML = 'Death Counter<br>';
+                de.el.innerHTML = '<div style="text-align:center">Death Counter</div>';
                 for (var death in d) {
-                    de.el.innerHTML += d[death][0] + ' ' + d[death][1] + '<br>';
+                    de.el.innerHTML += '<div><img src="https://minotar.net/helm/' + d[death][0] + '/16.png"> ' + d[death][0] + ' - ' + d[death][1] + '</div>';
                 }
                 de.el.hidden = false;
             }
