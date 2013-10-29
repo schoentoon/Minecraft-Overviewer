@@ -614,3 +614,22 @@ overviewer.views.DeathCounterView = Backbone.View.extend({
         });
     }
 });
+
+overviewer.views.WeatherView = Backbone.View.extend({
+    initialize: function() {
+        this.el.index=0;
+        var weatherImg = document.createElement('IMG');
+        weatherImg.src = '';
+        this.el.appendChild(weatherImg);
+        overviewer.map.controls[google.maps.ControlPosition.TOP_RIGHT].push(this.el);
+    },
+    updateWeather: function() {
+        we = this; /* Assuming https://gist.github.com/schoentoon/7216533 is at /weather.json.py */
+        $.getJSON('/weather.json.py', null, function(d) {
+            if (!(d == null || d == '')) {
+                we.$("IMG").attr("src", d["src"]);
+            }
+            setTimeout("we.updateWeather()", 60000);
+        });
+    }
+});

@@ -73,6 +73,10 @@ overviewer.util = {
         deathCounter.render();
         deathCounter.updateDeaths();
 
+        var weatherView = new overviewer.views.WeatherView({tagName: 'DIV'});
+        weatherView.render();
+        weatherView.updateWeather();
+
         if (overviewer.collections.haveSigns) {
             var signs = new overviewer.views.SignControlView();
             signs.registerEvents(signs);
