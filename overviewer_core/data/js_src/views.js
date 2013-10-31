@@ -624,8 +624,8 @@ overviewer.views.WeatherView = Backbone.View.extend({
         overviewer.map.controls[google.maps.ControlPosition.TOP_RIGHT].push(this.el);
     },
     updateWeather: function() {
-        we = this; /* Assuming https://gist.github.com/schoentoon/7216533 is at /weather.json.py */
-        $.getJSON('/weather.json.py', null, function(d) {
+        we = this; /* Assuming mcscoreboard-miner with the weather_dot_json contrib program running at /weather.json */
+        $.getJSON('/weather.json', null, function(d) {
             if (!(d == null || d == '')) {
                 we.$("IMG").attr("src", d["src"]);
             }
